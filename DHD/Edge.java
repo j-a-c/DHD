@@ -13,13 +13,31 @@ class Edge
      * from = A, to = B.
      * Given an undirected, the order should not matter.
      */
-    private String from;
-    private String to;
+    private Node from;
+    private Node to;
 
-    public Edge(String from, String to)
+    public Edge(Node from, Node to)
     {
         this.from = from;
         this.to = to;
     }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (other instanceof Edge)
+        {
+            Edge e = (Edge) other;
+            return this.from.equals(e.from) && this.to.equals(e.to);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return from.hashCode() & to.hashCode();
+    }
+
 
 }

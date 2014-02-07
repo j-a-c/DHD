@@ -23,5 +23,8 @@ class Driver
         }
 
         GraphReader reader = new GraphReader(graphFile);
+        
+        System.out.println(reader.getNodes().size());
+        System.out.println(reader.getEdges().size());
     }
 }

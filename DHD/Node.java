@@ -14,4 +14,18 @@ class Node
     {
         this.name = name;
     }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (other instanceof Node)
+            return this.name.equals(((Node)other).name);
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return name.hashCode();
+    }
 }
