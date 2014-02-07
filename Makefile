@@ -2,4 +2,4 @@ all:
 	# Compile Java Classes
 	javac DHD/*.java
 	# Create Jar
-	jar -cvf DHD.jar DHD/*.class
+	jar cfm DHD.jar Manifest.txt DHD/*.class
