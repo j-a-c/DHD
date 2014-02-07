@@ -22,6 +22,16 @@ class Edge
         this.to = to;
     }
 
+    public Node getFrom()
+    {
+        return this.from;
+    }
+
+    public Node getTo()
+    {
+        return this.to;
+    }
+
     @Override
     public boolean equals(Object other)
     {
@@ -37,6 +47,12 @@ class Edge
     public int hashCode()
     {
         return from.hashCode() & to.hashCode();
+    }
+
+    @Override 
+    public String toString()
+    {
+        return this.from.toString() + "__" + this.to.toString();
     }
 
 
