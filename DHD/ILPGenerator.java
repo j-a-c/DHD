@@ -62,7 +62,9 @@ class ILPGenerator
         // TODO
         for (Edge edge : edges)
         {
+            // Name the penalty variable
             String p_i_j = edge.toString() + "__p";
+            // Name the level variables.
             String t_j = edge.getTo().toString() + "__t";
             String t_i = edge.getFrom().toString() + "__t";
 
@@ -95,7 +97,6 @@ class ILPGenerator
             // Add integer bounds.
             formatter.addBound(0, this.numLevels-1, level);
         }
-
         
         return this.formatter.toString();
     }
