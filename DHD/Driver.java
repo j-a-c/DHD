@@ -1,6 +1,8 @@
 package DHD;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.Set;
 
 /**
@@ -39,7 +41,21 @@ class Driver
         // Generate the ILP.
         String ilp = gen.generate();
         
-        // TODO
-        System.out.println(ilp);
+        PrintWriter out = null;
+        try
+        {
+            out = new PrintWriter("graph.lp");
+            out.write(ilp);
+        }
+        catch (FileNotFoundException e)
+        {
+            System.err.println("Unable to write ILP to file. Outputint to STOUT.");
+            System.out.println(ilp);
+        }
+        finally
+        {
+            if (out != null)
+                out.close();
+        }
     }
 }
