@@ -4,3 +4,13 @@
 
 # Driver
 run
+
+# Input
+graph
+
+# Temporary
+*.lp
+*.sol
+
+# Notes
+_*
