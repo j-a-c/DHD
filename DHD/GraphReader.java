@@ -119,7 +119,7 @@ class GraphReader
     {
         if (nodes == null)
             parseGraph();
-        return nodes;
+        return new HashSet<Node>(nodes);
     }
 
     /**
@@ -130,7 +130,7 @@ class GraphReader
     {
         if (edges == null)
             parseGraph();
-        return edges;
+        return new HashSet<Edge>(edges);
     }
 
 

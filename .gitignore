@@ -2,9 +2,6 @@
 *.class
 *.jar
 
-# Driver
-run
-
 # Input
 graph
 

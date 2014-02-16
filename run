@@ -1,0 +1,82 @@
+#!/bin/bash
+# This script attempts to find the optimal hierarchical decomposition of the 
+# input graph.
+
+
+# ----
+# Configurable paramters for the job.
+# ----
+
+
+echo "Configuring job."
+
+# Name of the graph file
+GRAPH="graph"
+
+# The number of nodes to process at a time
+NODES_PER_RUN=5
+
+# The number of levels in the hierarchy.
+LEVELS=4
+
+# The ILP solution file root name.
+# This will be appended by the counter.
+SOL_ROOT="tmp/out.sol"
+
+
+# ----
+# Non-configurable paramters for the job.
+# ----
+
+
+# The number of nodes in the graph.
+NODES_LEFT=`for WORD in $(cat $GRAPH)
+do
+	echo $WORD
+done | sort -u | wc -l`
+
+# Counter to distinguish different iterations.
+COUNTER=1
+
+
+# ----
+# Job starts here.
+# ----
+
+
+echo "Setting up temporary workspace."
+rm -rf tmp
+mkdir -p tmp
+clear
+
+echo "Starting job."
+
+# TODO run the job multiple times.
+
+# Correct nodes per run if necessary.
+if [ $NODES_LEFT -lt $NODES_PER_RUN ]
+	then NODES_PER_RUN=$NODES_LEFT
+fi
+
+SOL_FILE="$SOL_ROOT$COUNTER"
+
+# Run the job the first time.
+java -jar DHD.jar -i $GRAPH -l $LEVELS -n $NODES_PER_RUN
+scip -c "read tmp/temp.lp" -c "optimize" -c "write solution $SOL_FILE" -c "quit"
+NODES_LEFT=$((NODES_LEFT-NODES_PER_RUN))
+
+# Continue to run the job, specifying the previous output file.
+while [ $NODES_LEFT -gt 0 ]; do
+	if [ $NODES_LEFT -lt $NODES_PER_RUN ]
+		then NODES_PER_RUN=$NODES_LEFT
+	fi
+
+	# While we still have edges left, at more nodes to the graph.
+	java -jar DHD.jar -i $GRAPH -l $LEVELS -n $NODES_PER_RUN -p $SOL_FILE
+
+	NODES_LEFT=$((NODES_LEFT-NODES_PER_RUN))
+	COUNTER=$((COUNTER+1))
+	SOL_FILE="$SOL_ROOT$COUNTER"
+
+	scip -c "read tmp/temp.lp" -c "optimize" -c "write solution $SOL_FILE" -c "quit"
+done

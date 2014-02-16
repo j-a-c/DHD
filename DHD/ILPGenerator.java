@@ -3,6 +3,7 @@ package DHD;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -12,22 +13,29 @@ import java.util.Set;
  */
 class ILPGenerator
 {
+    // Ending identifiers for the variables generated for the ILP.
+    public static final String penaltyEnding = "__p";
+    public static final String levelEnding = "__t";
+
     private Set<Node> nodes;
     private Set<Edge> edges;
+    private Map<String, Integer> prevNodes;
     private LPFormatter formatter;
     private int numLevels;
 
     /**
      * @param nodes The nodes in the graph.
      * @param edges The edges in the graph.
+     * @param prevNodes Nodes that should have a constant level in the graph.
      * @param formatter The formatter for the resulting ILP.
      * @param numLevels The number of levels in the hierarchy.
      */
-    public ILPGenerator(Set<Node> nodes, Set<Edge> edges, 
+    public ILPGenerator(Set<Node> nodes, Set<Edge> edges, Map<String,Integer> prevNodes, 
             LPFormatter formatter, int numLevels)
     {
         this.nodes = nodes;
         this.edges = edges;
+        this.prevNodes = prevNodes;
         this.formatter = formatter;
         this.numLevels = numLevels;
     }
@@ -59,14 +67,13 @@ class ILPGenerator
         // Holds the unique vars we will create that represent the levels.
         Set<String> levelVars = new HashSet<String>();
 
-        // TODO
         for (Edge edge : edges)
         {
             // Name the penalty variable
-            String p_i_j = edge.toString() + "__p";
+            String p_i_j = edge.toString() + penaltyEnding;
             // Name the level variables.
-            String t_j = edge.getTo().toString() + "__t";
-            String t_i = edge.getFrom().toString() + "__t";
+            String t_j = edge.getTo().toString() + levelEnding;
+            String t_i = edge.getFrom().toString() + levelEnding;
 
             // Store the level variables.
             levelVars.add(t_j);
@@ -89,13 +96,24 @@ class ILPGenerator
             formatter.addToObjective(1, p_i_j);
         }
 
-        for (String level : levelVars)
+        for (String levelVar : levelVars)
         {
             // Add integer constraints.
-            formatter.addIntegerVar(level);
-            
-            // Add integer bounds.
-            formatter.addBound(0, this.numLevels-1, level);
+            formatter.addIntegerVar(levelVar);
+
+            // Check if this node must be a constant level.
+            int endingIndex = levelVar.lastIndexOf(levelEnding);
+            // The key will be the original node name.
+            String key = levelVar.substring(0, endingIndex);
+            if (prevNodes.containsKey(key))
+            {
+                int level = prevNodes.get(key);
+                formatter.addBound(level, level, levelVar);
+            }
+            else
+            {
+                formatter.addBound(0, this.numLevels-1, levelVar);
+            }
         }
         
         return this.formatter.toString();
