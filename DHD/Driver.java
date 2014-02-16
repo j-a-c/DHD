@@ -3,12 +3,15 @@ package DHD;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
  * @author Joshua A. Campbell
  * Driver for the DHD module.
  * The driver stores some state information in tmp/__state.
+ * The state file should be deleted in between runs.
  *
  *
  * The Driver uses the input arguments to formulate an ILP to find the optimal
@@ -48,6 +51,9 @@ class Driver
     private static int numLevels = -1;
     // The number of nodes to include this iteration.
     private static int numNodesThisIter = Integer.MAX_VALUE;
+
+    // The 
+    private static final String statePath = "tmp" + File.separator + "__state";
 
 
     /**
@@ -164,6 +170,20 @@ class Driver
             return;
         }
 
+        // The nodes already used in the previous iterations.
+        HashSet prevNodes = new HashSet<String>();
+        // The levels corresponding to the nodes used in the previous
+        // iterations.
+        HashMap prevNodeLevels = new HashMap<String, String>();
+
+        // If the previous file flag has been specified, then we need to parse
+        // information for the output of the ILP solver.
+        if (prevFile != null)
+        {
+            //readStateFile();
+            //readPrevFile();
+        }
+
         GraphReader reader = new GraphReader(graphFile);
         
         // Get the parts of the graph.
@@ -171,7 +191,6 @@ class Driver
         Set<Edge> edges = reader.getEdges();
 
         // TODO form new edge and node set if necessary.
-
     
         // Initialize the LP generator.
         ILPGenerator gen = new ILPGenerator(nodes, edges, new LPFormatter(),

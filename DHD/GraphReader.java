@@ -5,7 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.File;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,6 +34,9 @@ class GraphReader
 
     /**
      * Constructs a graph reader using the specified file as the input graph.
+     *
+     * @param graphFile The graph file to parse.
+     * @param directed True if the graph is directed.
      */
     public GraphReader(File graphFile)
     {
@@ -44,16 +49,25 @@ class GraphReader
      */
     private void parseGraph()
     {
-        nodes = new HashSet<Node>();
         edges = new HashSet<Edge>();
+
+        // Temporary node data structure used to add neighbors to nodes.
+        Map<String, Node> tempNodes = new HashMap<String, Node>();
 
         BufferedReader input = null;
         String line;
         String[] lineObjs;
         try
         {
+            if (graphFile == null)
+                System.out.println("graphFile is null.");
+             if (tempNodes== null)
+                System.out.println("tempNodes is null.");
+
+
             input = new BufferedReader(new FileReader(graphFile));
 
+            // Read the whole file.
             while ((line = input.readLine()) != null)
             {
                 lineObjs = line.split("\\s++"); 
@@ -61,12 +75,25 @@ class GraphReader
                 Node a = new Node(lineObjs[0]);
                 Node b = new Node(lineObjs[1]);
 
-                nodes.add(a);
-                nodes.add(b);
+                // Add nodes to the temporary data structure.
+                if (!tempNodes.containsKey(a.getName()))
+                    tempNodes.put(a.getName(), a);
+                if (!tempNodes.containsKey(b.getName()))
+                    tempNodes.put(b.getName(), b);
+
                 edges.add(new Edge(a,b));
+
+                // Update the neighbors in the temporary data structure.
+                a = tempNodes.get(a.getName());
+                b = tempNodes.get(b.getName());
+                a.addNeighbor(b);
+                b.addNeighbor(a);
             }
+
+            // Add the temporary nodes to the final node data structure.
+            nodes = new HashSet<Node>(tempNodes.values());
         }
-        catch(Exception e)
+        catch(IOException e)
         {
             System.out.println(e);
         }
