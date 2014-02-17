@@ -13,6 +13,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import DHD.ilp.*;
+import DHD.ds.*;
+import DHD.graph.*;
+
 /**
  * @author Joshua A. Campbell
  * Driver for the DHD module.

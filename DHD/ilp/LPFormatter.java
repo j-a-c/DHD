@@ -1,14 +1,16 @@
-package DHD;
+package DHD.ilp;
 
 import java.lang.StringBuilder;
 import java.util.List;
+
+import DHD.ds.*;
 
 /**
  * @author Joshua A. Campbell
  *
  * Generates an ouput file that follows the CPLEX LP file format.
  */
-class LPFormatter
+public class LPFormatter
 {
     /*
      * Some string constants.

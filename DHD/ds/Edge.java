@@ -1,11 +1,11 @@
-package DHD;
+package DHD.ds;
 
 /**
  * @author Joshua A. Campbell
  *
  * Represents an edge.
  */
-class Edge
+public class Edge
 {
     /*
      * Given the directed edge:

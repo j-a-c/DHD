@@ -1,4 +1,4 @@
-package DHD;
+package DHD.ilp;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -7,10 +7,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import DHD.ds.*;
+
 /**
  * Parses the result of SCIP ILP solver.
  */
-class ILPOutputReader
+public class ILPOutputReader
 {
     private static final String levelEnding = ILPGenerator.levelEnding;
 

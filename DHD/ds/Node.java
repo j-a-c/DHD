@@ -1,4 +1,4 @@
-package DHD;
+package DHD.ds;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,7 +10,7 @@ import java.util.Set;
  *
  * Represents a node in a graph.
  */
-class Node
+public class Node
 {
     // The name of this node. Should be unique in a graph.
     private String name;

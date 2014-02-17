@@ -7,7 +7,7 @@ graph
 
 # Temporary
 *.lp
-*.sol
+*.sol*
 
 # Notes
 _*

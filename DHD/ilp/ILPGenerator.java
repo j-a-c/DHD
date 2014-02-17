@@ -1,4 +1,4 @@
-package DHD;
+package DHD.ilp;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -6,12 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import DHD.ds.*;
+
 /**
  * @author Joshua A. Campbell
  *
  * Generates an ILP that to find the hierarchy in the graph.
  */
-class ILPGenerator
+public class ILPGenerator
 {
     // Ending identifiers for the variables generated for the ILP.
     public static final String penaltyEnding = "__p";
