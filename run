@@ -11,13 +11,13 @@
 echo "Configuring job."
 
 # Name of the graph file
-GRAPH="graph"
+GRAPH="graph_12"
 
 # The number of nodes to process at a time
 NODES_PER_RUN=5
 
 # The number of levels in the hierarchy.
-LEVELS=4
+LEVELS=7
 
 # The ILP solution file root name.
 # This will be appended by the counter.
@@ -80,3 +80,6 @@ while [ $NODES_LEFT -gt 0 ]; do
 
 	scip -c "read tmp/temp.lp" -c "optimize" -c "write solution $SOL_FILE" -c "quit"
 done
+
+# Final job to merge the final results.
+java -jar DHD.jar -f $SOL_FILE

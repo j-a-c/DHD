@@ -74,20 +74,26 @@ class Driver
      * the following arguments (if the flags are specified):
      *      graphFile, prevFile, numLevels, numNodesThisIter
      *
+     * If -f is returned, the final output file will be merged with the state
+     * file and the Driver will quit.
+     *
      * @param args The arguments to parse.
      *
-     * @return Returns true if the arguments were successfully parsed.
+     * @return Returns true if the arguments were successfully parsed. -f
+     * returns false so the Driver can quit.
      */
     private static boolean parseArgs(String[] args)
     {
         // Check argument length.
-        if (args.length < 4)
+        if (args.length == 0)
         {
             System.out.println("Usage: java Driver -i graphFile -l numLevels -n numNodes -p prevIter");
             System.out.println("\t-i : The input graph file. (required)");
             System.out.println("\t-l : The number of levels in the hierarchical decomposition. (required)");
             System.out.println("\t-n : The number of nodes to select from the orginal graph. (optional)");
             System.out.println("\t-p : The output from the previous iteration. (optional)");
+            System.out.println("Usage: java Driver -f file");
+            System.out.println("\t-f : The final output file to merge.");
             return false;
         }
 
@@ -117,6 +123,24 @@ class Driver
                         return false;
                     }
                     break;
+                // Merge the final output file.
+                case "-f":
+                    prevFile = new File(param);
+                    if (!prevFile.exists())
+                    {
+                        System.err.println("File does not exist: " + param);
+                        return false;
+                    }
+                    Set<Node> prevNodes = new HashSet<Node>();
+                    HashMap<String, Integer> prevNodeLevels = new HashMap<String, Integer>();
+                    // Read and merge state.
+                    readStateFile(prevNodes, prevNodeLevels);
+                    readPrevFile(prevNodeLevels);
+                    // Save the state.
+                    // We pass an empty node as the second param because there
+                    // are no new nodes to consider.
+                    saveState(prevNodeLevels, new HashSet<Node>());
+                    return false;
                 // Argument for the number of levels in the hierarchy.
                 case "-l" :
                     numLevels = Integer.parseInt(param);
