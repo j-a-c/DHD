@@ -52,7 +52,7 @@ import DHD.graph.*;
  * -- ILP solver solves problem formulation. --
  *
  */
-class Driver
+class CompleteSolver
 {
     private static final int DEFAULT = -1;
 
@@ -69,7 +69,7 @@ class Driver
     private static final String statePath = "tmp" + File.separator + "__state";
 
     // We do not allow instantiation of a driver.
-    private Driver(){}
+    private CompleteSolver(){}
 
     /**
      * Parses the arguments supplied to the driver. The function initializes

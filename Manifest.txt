@@ -1,1 +1,1 @@
-Main-Class: DHD.Driver
+Main-Class: DHD.CompleteSolver
