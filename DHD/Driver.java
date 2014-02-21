@@ -68,6 +68,8 @@ class Driver
     // The 
     private static final String statePath = "tmp" + File.separator + "__state";
 
+    // We do not allow instantiation of a driver.
+    private Driver(){}
 
     /**
      * Parses the arguments supplied to the driver. The function initializes
@@ -177,21 +179,16 @@ class Driver
      */
     private static void saveOutput(String output, String loc)
     {
-        PrintWriter outWriter = null;
-        try
+        try (PrintWriter outWriter = new PrintWriter(loc))
         {
-            outWriter = new PrintWriter(loc);
             outWriter.write(output);
+
+            outWriter.close();
         }
         catch (FileNotFoundException e)
         {
             System.err.println("Unable to write ILP to file. Outputting to STOUT.");
-            System.out.println(output);
-        }
-        finally
-        {
-            if (outWriter != null)
-                outWriter.close();
+            System.err.println(output);
         }
 
     }
@@ -205,14 +202,10 @@ class Driver
      */
     public static void readStateFile(Set<Node> prevNodes, Map<String,Integer> prevNodeLevels)
     {
-        BufferedReader input = null;
         String line;
         String[] lineObjs;
-        try
+        try (BufferedReader input = new BufferedReader(new FileReader(new File(statePath))))
         {
-
-            input = new BufferedReader(new FileReader(new File(statePath)));
-
             // Read the whole file.
             while ((line = input.readLine()) != null)
             {
@@ -221,23 +214,14 @@ class Driver
                 prevNodes.add(new Node(lineObjs[0]));
                 prevNodeLevels.put(lineObjs[0], Integer.parseInt(lineObjs[1]));
             }
+
+            input.close();
         }
         catch(IOException e)
         {
             System.err.println(e);
         }
-        finally
-        {
-            try
-            {
-                if (input != null)
-                    input.close();
-            }
-            catch (IOException e)
-            {
-                System.err.println(e);
-            }
-        }
+
     }
 
     /**
@@ -261,10 +245,8 @@ class Driver
      */
     public static void saveState(Map<String,Integer> prev, Set<Node> curr)
     {
-        PrintWriter outWriter = null;
-        try
+        try (PrintWriter outWriter = new PrintWriter(statePath))
         {
-            outWriter = new PrintWriter(statePath);
 
             for (Map.Entry<String,Integer> entry : prev.entrySet())
                 outWriter.println(entry.getKey() + " " + entry.getValue());
@@ -274,16 +256,12 @@ class Driver
             for (Node node : curr)
                 outWriter.println(node.getName() + " " + 0);
 
+            outWriter.close();
         }
         catch (FileNotFoundException e)
         {
-            System.out.println("Unable to write state file!");
+            System.err.println("Unable to write state file!");
             System.err.println(e);
-        }
-        finally
-        {
-            if (outWriter != null)
-                outWriter.close();
         }
 
     }
@@ -319,7 +297,7 @@ class Driver
         }
 
         // Reader to read the input graph file.
-        GraphReader reader = new GraphReader(graphFile);
+        GraphReader reader = new DefaultGraphReader(graphFile);
         
         // Get the parts of the graph.
         // These two data structures now contain the complete graph.
