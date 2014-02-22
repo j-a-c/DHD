@@ -1,14 +1,18 @@
 #!/bin/bash
 # This script attempts to find the optimal hierarchical decomposition of the 
-# input graph.
+# input graph. Then, it randomly mutates that graph and attempt to find the
+# dynamic hierarchical decomposition of the mutated graph.
 
-
-# ----
+# ------
 # Configurable paramters for the job.
-# ----
+# ------
 
 
 echo "Configuring job."
+
+# ----
+# Optimal hierarchy parameters
+# ----
 
 # Name of the graph file
 GRAPH="graph_12"
@@ -25,6 +29,30 @@ SOL_ROOT="tmp/out.sol"
 
 
 # ----
+# Mutations parameters
+# ----
+
+# The number of edges to mutate in the original graph
+NUM_MUTATE=1
+
+# The neighborhood size to choose from when selecting nodes to dynamically re-rank.
+HOOD_SIZE=0
+
+# Then maximum amount of levels a node can change when being re-ranked.
+CHANGE=1
+
+
+# ----
+# Dynamic decomposition parameters
+# ----
+
+# Output for the solution to the mutated graph.
+MUT_SOL_FILE="tmp/mut_sol.sol"
+
+# The name of the file the mutated graph to store the mutated graph.
+MUTATED_GRAPH="$GRAPH.mutate"
+
+# ----
 # Non-configurable paramters for the job.
 # ----
 
@@ -39,9 +67,11 @@ done | sort -u | wc -l`
 COUNTER=1
 
 
-# ----
-# Job starts here.
-# ----
+
+# -------
+# This part of the script attempts to find the optimal hierarchical 
+# decompostition of the input graph.
+# -------
 
 
 echo "Setting up temporary workspace."
@@ -83,3 +113,17 @@ done
 
 # Final job to merge the final results.
 java -jar DHD.jar -f $SOL_FILE
+
+
+# -------
+# This part of the script randomly mutates the graph.
+# -------
+
+# Mutate the original graph
+java -cp DHD.jar DHD.Mutator -i $GRAPH -o $MUTATED_GRAPH -n $NUM_MUTATE
+
+# -------
+# This part of the script dynamically solves the mutated graph.
+# -------
+java -cp DHD.jar DHD.PartialSolver -i $MUTATED_GRAPH -p "tmp/__state" -d $GRAPH -k $HOOD_SIZE -c $CHANGE -l $LEVELS
+scip -c "read tmp/temp.lp" -c "optimize" -c "write solution $MUT_SOL_FILE" -c "quit"

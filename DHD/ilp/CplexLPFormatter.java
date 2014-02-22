@@ -10,7 +10,7 @@ import DHD.ds.*;
  *
  * Generates an ouput file that follows the CPLEX LP file format.
  */
-public class LPFormatter
+public class CplexLPFormatter
 {
     /*
      * Some string constants.
@@ -63,7 +63,7 @@ public class LPFormatter
     // The number of constraints that have been added so far.
     private int numConstraints = 0;
     
-    public LPFormatter()
+    public CplexLPFormatter()
     {
     
     }

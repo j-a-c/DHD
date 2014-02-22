@@ -124,13 +124,13 @@ public class Mutator
             Edge edge2 = newEdges.get(index2);
 
             // Enforce that given two edges (i,j) and (u,v), i != j != u != v.
-            if (edge1.getFrom() == edge2.getFrom())
+            if ( edge1.getFrom().equals(edge2.getFrom()) )
                 continue;
-            if (edge1.getTo() == edge2.getTo())
+            if ( edge1.getTo().equals(edge2.getTo()) )
                 continue;
-            if (edge1.getFrom() == edge2.getTo())
+            if ( edge1.getFrom().equals(edge2.getTo()) )
                 continue;
-            if (edge1.getTo() == edge2.getFrom())
+            if ( edge1.getTo().equals(edge2.getFrom()) )
                 continue;
 
             // Remove the old edges from the graph.
@@ -148,14 +148,6 @@ public class Mutator
             // Add the two new edges to the graph.
             newEdges.add(newEdge1);
             newEdges.add(newEdge2);
-
-            System.out.println("Removing: ");
-            System.out.println("\t" + edge1);
-            System.out.println("\t" +  edge2);
-
-            System.out.println("Adding: ");
-            System.out.println("\t" + newEdge1);
-            System.out.println("\t" +  newEdge2);
 
 
             numEdges--;

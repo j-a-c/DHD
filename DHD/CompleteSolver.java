@@ -340,17 +340,6 @@ class CompleteSolver
             neighborSet.removeAll(prevNodes);
 
 
-            // TODO Delete debug output.
-            System.out.println("Prev Nodes:");
-            for (Node n : prevNodes)
-                System.out.println(n);
-            System.out.println();
-            System.out.println("Starting neighbor set:");
-            for (Node n : neighborSet)
-                System.out.println(n);
-            System.out.println();
-
-
             // If necessary, select an inital neighbor.
             // This will be necessary during the first iteration.
             if (neighborSet.isEmpty())
@@ -422,21 +411,10 @@ class CompleteSolver
         // Write state file.
         saveState(prevNodeLevels, nodes);
 
-
-        // TODO Delete debug output.
-        System.out.println("Choosing Nodes:");
-        for (Node n : nodes)
-            System.out.println(n);
-        System.out.println();
-        System.out.println("Using edges:");
-        for (Edge e : edges)
-            System.out.println(e);
-        System.out.println();
-
-
+       
         // Initialize the LP generator.
-        ILPGenerator gen = new ILPGenerator(nodes, edges, prevNodeLevels, new LPFormatter(),
-                numLevels);
+        CompleteILPGenerator gen = new CompleteILPGenerator(edges, 
+                prevNodeLevels, new CplexLPFormatter(), numLevels);
 
         // Generate the ILP.
         String ilp = gen.generate();
