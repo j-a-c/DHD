@@ -133,10 +133,6 @@ public class Mutator
             if ( edge1.getTo().equals(edge2.getFrom()) )
                 continue;
 
-            // Remove the old edges from the graph.
-            newEdges.remove(edge1);
-            newEdges.remove(edge2);
-
             // Form the new edges.
             Edge newEdge1 = new Edge(edge1.getFrom(), edge2.getTo());
             Edge newEdge2 = new Edge(edge2.getFrom(), edge1.getTo());
@@ -144,6 +140,10 @@ public class Mutator
             // Make sure the new edges don't exist already.
             if (newEdges.contains(newEdge1) || newEdges.contains(newEdge2))
                 continue;
+
+            // Remove the old edges from the graph.
+            newEdges.remove(edge1);
+            newEdges.remove(edge2);
 
             // Add the two new edges to the graph.
             newEdges.add(newEdge1);

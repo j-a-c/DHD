@@ -1,0 +1,172 @@
+#!/bin/bash
+# Given the graph file, compares the HIDEN method and the dynamic method.
+# Outputs a graph comparing the penalties and the cumulative times.
+# Joshua A. Campbell
+ 
+
+#-----------------
+# Configurable Parameters
+#-----------------
+
+# Name of the graph file
+#GRAPH="sf_75_3_1"
+GRAPH="sf_50_3_1"
+
+# The number of levels in the hierarchy.
+LEVELS=7
+
+# The ILP solution file root name.
+# This will be appended with the counter.
+SOL_ROOT="tmp/out.sol"
+
+# The number of nodes in the graph.
+# If using a custom graph format, update this!
+TOTAL_NODES=`for WORD in $(cat $GRAPH)
+do
+	echo $WORD
+done | sort -u | wc -l`
+
+# The total number of edges in the graph.
+# If using a custom graph format, update this!
+TOTAL_EDGES=`wc -l $GRAPH`
+TOTAL_EDGES=`python -c "print '$TOTAL_EDGES'.split()[0]"`
+
+# The ILP solution file.
+SOL_FILE="tmp/out.sol"
+
+# Output for the solution to the mutated graph.
+MUT_SOL_FILE="tmp/mut_sol.sol"
+
+# The number of edges to mutate per iteration.
+MUT_PER=0.025
+
+# Then maximum amount of levels a node can change when being re-ranked.
+LEVELD=1
+
+# The neighborhood size to choose from when selecting nodes to dynamically re-rank.
+HOOD_SIZE=1
+
+# The number of iterations to run for.
+# This does not include the 0th iteration, where the dynamic solver
+# uses HIDEN's output as its start state.
+ITERS=100
+
+# Output files for the timining values.
+DTIME="dhd_time.txt"
+HTIME="hid_time.txt"
+
+# Output files for the penalty values.
+DPENALTY="dhd_pen.txt"
+HPENALTY="hid_pen.txt"
+
+# Output files for the graphs.
+OUTPEN="penalty.png"
+OUTTIME="time.png"
+
+
+#-----------------
+# Non-Configurable Parameters
+#-----------------
+
+COUNTER=0
+
+# The name of the file the mutated graph to store the mutated graph.
+MUTATED_GRAPH="$GRAPH.mutate.$COUNTER"
+
+# The number of perturbations each iteration.
+NUM_PERTURB=`python -c "from math import ceil; print int(ceil($TOTAL_EDGES*$MUT_PER/2))"`
+
+
+#-----------------
+# Job starts here!
+#-----------------
+
+# Delete previous run's ILP files.
+echo "Setting up temporary workspace."
+rm -rf tmp
+mkdir -p tmp
+
+# Delete previous data.
+rm $HPENALTY
+rm $DPENALTY
+rm $DTIME
+rm $HTIME
+
+#-----
+# 0th iteration
+#-----
+
+# Run HIDEN to calculate the inital optimial hierarchy.
+echo "Calculating Initial Hierarchy."
+java -jar DHD.jar -i $GRAPH -l $LEVELS -n $TOTAL_NODES
+scip -q -c "read tmp/temp.lp" -c "optimize" -c "write solution $SOL_FILE" -c "quit"
+java -jar DHD.jar -f $SOL_FILE
+# Save HIDEN's state for DHD to use (only for the first round).
+cp "tmp/__state" "tmp/__mstate"
+
+echo "Mutating original graph."
+# Mutate original graph.
+java -cp DHD.jar DHD.Mutator -i $GRAPH -o $MUTATED_GRAPH -n $NUM_PERTURB
+
+PREV_GRAPH=$GRAPH
+
+#-----
+# All other iterations
+#-----
+while [ $COUNTER -lt $ITERS ]; do
+
+	echo "Starting iteration $COUNTER out of $ITERS"
+
+	# Dynamically solve the mutated graph.
+	# We use the state file from HIDEN's output.
+	echo "Calculating DHD."
+	java -cp DHD.jar DHD.PartialSolver -i $MUTATED_GRAPH -p "tmp/__mstate" -d $PREV_GRAPH -k $HOOD_SIZE -c $LEVELD -l $LEVELS
+	# Saving timing values for command.
+	echo `/usr/bin/time -f %e 2>&1 scip -q -c "read tmp/temp.lp" -c "optimize" -c "write solution $MUT_SOL_FILE" -c "quit"` >> $DTIME
+	java -jar DHD.jar -f $MUT_SOL_FILE
+	# Save state for next iteration.
+	cp "tmp/__state" "tmp/__mstate"
+	# Save penalty.
+	echo `python -c "f=open('$MUT_SOL_FILE');f.readline();print f.readline().split()[2]"` >> $DPENALTY
+
+	# Run HIDEN on the mutated graph.
+	echo "Calculating HIDEN."
+	java -jar DHD.jar -i $MUTATED_GRAPH -l $LEVELS -n $TOTAL_NODES
+	# Save timing values for command.
+	echo `/usr/bin/time -f %e 2>&1 scip -q -c "read tmp/temp.lp" -c "optimize" -c "write solution $SOL_FILE" -c "quit"` >> $HTIME
+	java -jar DHD.jar -f $SOL_FILE
+	# Save penalty.
+	echo `python -c "f=open('$SOL_FILE');f.readline();print f.readline().split()[2]"` >> $HPENALTY
+	
+	# Set up variables for next round.
+	COUNTER=$((COUNTER+1))
+	PREV_GRAPH=$MUTATED_GRAPH
+	MUTATED_GRAPH="$GRAPH.mutate.$COUNTER"
+
+	# Mutate the graph.
+	echo "Mutating graph."
+	java -cp DHD.jar DHD.Mutator -i $PREV_GRAPH -o $MUTATED_GRAPH -n $NUM_PERTURB
+
+done
+
+
+#-----
+# Plot the data.
+#-----
+
+echo "Creating final graphs."
+
+# Penalty data
+echo -e "import matplotlib.pyplot as plt\nfrom itertools import izip\npoints=[]\nfor dline, hline in izip(open('$DPENALTY'), open('$HPENALTY')):\n\tpoints.append(float(dline)/float(hline))\nplt.plot(range(len(points)), points, 'ro')\nplt.savefig('$OUTPEN')" | python
+
+# Time data
+echo -e "import numpy as np\nimport matplotlib.pyplot as plt\nfrom itertools import izip\ndpoints=[]\nhpoints=[]\nfor dline, hline in izip(open('$DTIME'), open('$HTIME')):\n\tdpoints.append(float(dline))\n\thpoints.append(float(hline))\nplt.plot(range(len(dpoints)), [x/y for x,y in zip(np.cumsum(dpoints),np.cumsum(hpoints))], 'ro')\nplt.savefig('$OUTTIME')" | python
+
+
+#-----
+# Cleanup
+#-----
+
+# Delete the mutated graphs.
+rm *.mutate.*
+

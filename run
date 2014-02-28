@@ -15,10 +15,10 @@ echo "Configuring job."
 # ----
 
 # Name of the graph file
-GRAPH="graph_12"
+GRAPH="graph_er_1000"
 
 # The number of nodes to process at a time
-NODES_PER_RUN=5
+NODES_PER_RUN=50
 
 # The number of levels in the hierarchy.
 LEVELS=7
@@ -33,18 +33,19 @@ SOL_ROOT="tmp/out.sol"
 # ----
 
 # The number of edges to mutate in the original graph
-NUM_MUTATE=1
+NUM_MUTATE=50
+
+
+
+# ----
+# Dynamic decomposition parameters
+# ----
 
 # The neighborhood size to choose from when selecting nodes to dynamically re-rank.
 HOOD_SIZE=0
 
 # Then maximum amount of levels a node can change when being re-ranked.
 CHANGE=1
-
-
-# ----
-# Dynamic decomposition parameters
-# ----
 
 # Output for the solution to the mutated graph.
 MUT_SOL_FILE="tmp/mut_sol.sol"

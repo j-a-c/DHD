@@ -61,7 +61,10 @@ public class ILPOutputReader
                     if (nameIndex == -1)
                         continue;
                     String name = lineObjs[0].substring(0, nameIndex);
-                    results.put(name, Integer.parseInt(lineObjs[1]));
+                    // In case the value might be something like 0.9999, we
+                    // parse as a Double, then round, and then produce the int
+                    // value.
+                    results.put( name, new Long(Math.round(Double.parseDouble(lineObjs[1]))).intValue() );
                 }
             }
         }
