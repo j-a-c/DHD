@@ -49,7 +49,7 @@ HOOD_SIZE=1
 # The number of iterations to run for.
 # This does not include the 0th iteration, where the dynamic solver
 # uses HIDEN's output as its start state.
-ITERS=100
+ITERS=10
 
 # Output files for the timining values.
 DTIME="dhd_time.txt"
