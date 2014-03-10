@@ -1,6 +1,7 @@
 #!/bin/bash
 # Given the graph file, compares the HIDEN method and the dynamic method.
 # Outputs a graph comparing the penalties and the cumulative times.
+# Runs for each test TRIALS number of times, for ITERS iterations.
 # Joshua A. Campbell
  
 
