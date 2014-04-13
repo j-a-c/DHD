@@ -10,8 +10,8 @@
 #-----------------
 
 # Name of the graph file
-#GRAPH="sf_75_3_1"
-GRAPH="sf_50_3_1"
+GRAPH="sf_75_2_1"
+#GRAPH="sf_50_3_1"
 ORIG_GRAPH=$GRAPH
 
 # The number of levels in the hierarchy.
@@ -40,16 +40,16 @@ SOL_FILE="tmp/out.sol"
 MUT_SOL_FILE="tmp/mut_sol.sol"
 
 # The number of edges to mutate per iteration.
-MUT_PER=0.025
+MUT_PER=0.2
 
 # Then maximum amount of levels a node can change when being re-ranked.
-LEVELD=1
+LEVELD=3
 
 # The neighborhood size to choose from when selecting nodes to dynamically re-rank.
 HOOD_SIZE=1
 
 # The number of trials. (How many times should we run the perturbation program).
-TRIALS=100
+TRIALS=15
 
 # The number of iterations to run the pertubation for.
 # This does not include the 0th iteration, where the dynamic solver
@@ -65,8 +65,8 @@ DPENALTY="dhd_pen.txt"
 HPENALTY="hid_pen.txt"
 
 # Output files for the graphs.
-OUTPEN="penalty.png"
-OUTTIME="time.png"
+OUTPEN=$ORIG_GRAPH"_trials_"$TRIALS"_mut_"$MUT_PER"_ld_"$LEVELD"_penalty.png"
+OUTTIME=$ORIG_GRAPH"_trials_"$TRIALS"_mut_"$MUT_PER"_ld_"$LEVELD"_time.png"
 
 
 #-----------------
@@ -138,9 +138,9 @@ while [ $TCOUNTER -le $TRIALS ]; do
 		# Initialize array if we are on the first trial.
 		if [ $TCOUNTER -eq 1 ]; then
 			DTARRAY[$COUNTER]=0;
-			#DPARRAY[$COUNTER]=0;
+			DPARRAY[$COUNTER]=0;
 			HTARRAY[$COUNTER]=0;
-			#HPARRAY[$COUNTER]=0;
+			HPARRAY[$COUNTER]=0;
 		fi
 
 		echo "Starting: Iteration: $COUNTER / $ITERS, Trial: $TCOUNTER / $TRIALS"
@@ -154,8 +154,8 @@ while [ $TCOUNTER -le $TRIALS ]; do
 		java -jar DHD.jar -f $MUT_SOL_FILE
 		# Save state for next iteration.
 		cp "tmp/__state" "tmp/__mstate"
-		# Save penalty. These values will be integer.
-		DPARRAY[$COUNTER]+=$((`python -c "f=open('$MUT_SOL_FILE');f.readline();print f.readline().split()[2]"`));
+		# Save penalty. These values will be integer, but we will pipe through bc in case of rounding errors (like 6.0000001)
+		DPARRAY[$COUNTER]=$(echo "${DPARRAY[$COUNTER]}+`python -c "f=open('$MUT_SOL_FILE');f.readline();print f.readline().split()[2]"`" | bc);
 
 		# Run HIDEN on the mutated graph.
 		echo "Calculating HIDEN."
@@ -163,8 +163,8 @@ while [ $TCOUNTER -le $TRIALS ]; do
 		# Save timing values for command. These values are decimal, so we pipe through bc.
 		HTARRAY[$COUNTER]=$(echo "${HTARRAY[$COUNTER]}+`/usr/bin/time -f %e 2>&1 scip -q -c 'read tmp/temp.lp' -c 'optimize' -c "write solution $SOL_FILE" -c 'quit'`" | bc);
 		java -jar DHD.jar -f $SOL_FILE
-		# Save penalty. These values will be integer.
-		HPARRAY[$COUNTER]+=$((`python -c "f=open('$SOL_FILE');f.readline();print f.readline().split()[2]"`));
+		# Save penalty. These values will be integer, but we will pipe through bc in case of rounding errors (like 6.0000001)
+		HPARRAY[$COUNTER]=$(echo "${HPARRAY[$COUNTER]}+`python -c "f=open('$SOL_FILE');f.readline();print f.readline().split()[2]"`" | bc);
 	
 		# Set up variables for next round.
 		COUNTER=$((COUNTER+1))
@@ -211,10 +211,10 @@ done
 echo "Creating final graphs."
 
 # Penalty data
-echo -e "import matplotlib.pyplot as plt\nfrom itertools import izip\npoints=[]\nfor dline, hline in izip(open('$DPENALTY'), open('$HPENALTY')):\n\tpoints.append(float(dline)/float(hline))\nplt.plot(range(len(points)), points, 'ro')\nplt.xlabel('Iteration #')\nplt.ylabel('sum(DHD)/sum(Hiden) cumulative run time per iteration')\nplt.savefig('$OUTPEN')" | python
+echo -e "import matplotlib.pyplot as plt\nfrom itertools import izip\npoints=[]\nfor dline, hline in izip(open('$DPENALTY'), open('$HPENALTY')):\n\tpoints.append(float(dline)/float(hline))\nplt.plot(range(len(points)), points, 'ro')\nplt.xlabel('Iteration #')\nplt.ylabel('sum(DHD)/sum(Hiden) penalties')\nplt.savefig('$OUTPEN')" | python
 
 # Time data
-echo -e "import numpy as np\nimport matplotlib.pyplot as plt\nfrom itertools import izip\ndpoints=[]\nhpoints=[]\nfor dline, hline in izip(open('$DTIME'), open('$HTIME')):\n\tdpoints.append(float(dline))\n\thpoints.append(float(hline))\nplt.plot(range(len(dpoints)), [x/y for x,y in zip(np.cumsum(dpoints),np.cumsum(hpoints))], 'ro')\nplt.xlabel('Iteration #')\nplt.ylabel('sum(DHD)/sum(Hiden) penalties per iteration')\nplt.savefig('$OUTTIME')" | python
+echo -e "import numpy as np\nimport matplotlib.pyplot as plt\nfrom itertools import izip\ndpoints=[]\nhpoints=[]\nfor dline, hline in izip(open('$DTIME'), open('$HTIME')):\n\tdpoints.append(float(dline))\n\thpoints.append(float(hline))\nplt.plot(range(len(dpoints)), [x/y for x,y in zip(np.cumsum(dpoints),np.cumsum(hpoints))], 'ro')\nplt.xlabel('Iteration #')\nplt.ylabel('sum(DHD)/sum(Hiden) cumulative run time per iteration')\nplt.savefig('$OUTTIME')" | python
 
 
 #-----

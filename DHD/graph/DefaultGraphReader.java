@@ -67,6 +67,9 @@ public class DefaultGraphReader extends GraphReader
             {
                 lineObjs = line.split("\\s++"); 
                 
+                if (lineObjs.length != 2) 
+                    break;
+
                 Node a = new Node(lineObjs[0]);
                 Node b = new Node(lineObjs[1]);
 

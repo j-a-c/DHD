@@ -41,7 +41,7 @@ MUT_SOL_FILE="tmp/mut_sol.sol"
 MUT_PER=0.025
 
 # Then maximum amount of levels a node can change when being re-ranked.
-LEVELD=1
+LEVELD=3
 
 # The neighborhood size to choose from when selecting nodes to dynamically re-rank.
 HOOD_SIZE=1
