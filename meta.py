@@ -17,8 +17,8 @@ import time
 """
 
 # Name of the graph file
-#graph ="sf_75_2_1"
-graph="sf_50_2_1"
+graph ="sf_75_2_1"
+#graph="sf_50_2_1"
 orig_graph = graph
 
 # The number of levels in the hierarchy.
@@ -35,10 +35,11 @@ sol_file = "tmp/out.sol"
 mut_sol_file ="tmp/mut_sol.sol"
 
 # The number of edges to mutate per iteration.
-mut_per = 0.05
+mut_per = 0.025
 
 # Then maximum amount of levels a node can change when being re-ranked.
-leveld = 3
+#leveld = 3
+leveld = levels
 
 # The neighborhood size to choose from when selecting nodes to dynamically re-rank.
 hood_size = 1
@@ -188,7 +189,7 @@ while trialCounter <= trials:
         # Save penalty. These values will be integer, but we will pipe through bc in case of rounding errors (like 6.0000001)
         f = open(mut_sol_file)
         f.readline(); # Skip the first line.
-        dpenaltyTemp = int(f.readline().split()[2])
+        dpenaltyTemp = int(round(float(f.readline().split()[2])))
 
 
         # Run HIDEN on the mutated graph.
@@ -205,7 +206,7 @@ while trialCounter <= trials:
         # Save penalty. These values will be integer, but we will pipe through bc in case of rounding errors (like 6.0000001)
         f = open(sol_file)
         f.readline() # Skip the first line
-        hpenaltyTemp = int(f.readline().split()[2])
+        hpenaltyTemp = int(round(float(f.readline().split()[2])))
 
         # Set up variables for next round.
         prev_graph = mutatedGraph

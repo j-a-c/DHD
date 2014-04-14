@@ -184,6 +184,119 @@ public class SmartPartialSolver
 
 
     /**
+     * Returns true if we must check this node to achieve a better hierarchy.
+     * This is basically the smart selection algorithm. This function is to be
+     * used on the modifications (added or deleted edges), not the neighbors of
+     * the affected nodes.
+     *
+     * @param from The node the edge is coming from.
+     * @param to The node the edge is going to.
+     * @param rankings The previous rankings of the nodes.
+     * @param added True if this edge is being added, false if the edge is
+     * being deleted.
+     *
+     * @return True if we need to check this node, false otherwise.
+     */
+    private static boolean mustCheckModification(Node from, Node to, Map<String,Integer> rankings, boolean added)
+    {
+        int fromRank = rankings.get(from.getName());
+        int toRank = rankings.get(to.getName());
+
+        if (added) // This edge is being added.
+        {
+            if (fromRank > toRank)
+                return false;
+            else
+                return true;
+        }
+        else // This edge is being deleted.
+        {
+            if (fromRank < toRank)
+                return true;
+            else return false;
+        }
+    }
+
+    /**
+     * Returns true if we must check this node to achieve a better hierarchy.
+     * This function is to be used on the neighbors of the nodes that were
+     * added or deleted initially.
+     *
+     * @param from The node the edge is coming from.
+     * @param to The node the edge is going to.
+     * @param tail The tail in the original edge.
+     * @param rankings The previous rankings of the nodes.
+     * @param added True if this edge is being added, false if the edge is
+     * being deleted.
+     * @param first True if the from node is part of the edge being inserted or
+     * deleted.
+     *
+     * @return True if we need to check this node, false otherwise.
+     */
+    private static boolean mustCheckNeighbor(Node from, Node to, Node tail, Map<String,Integer> rankings, boolean added, boolean first)
+    {
+        int tailRank = rankings.get(tail.getName());
+
+        if (added) // This edge is being added.
+        {
+            if (first) 
+            {
+                int headRank = rankings.get(from.getName());
+                int toRank = rankings.get(to.getName());
+
+                if (headRank == tailRank && headRank < toRank)
+                    return true;
+                else if (headRank < tailRank && toRank > headRank)
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                int headRank = rankings.get(to.getName());
+                int toRank = rankings.get(from.getName());
+
+                if (headRank == tailRank && toRank < headRank)
+                    return false;
+                else if (headRank < tailRank && toRank < headRank)
+                    return false;
+                else
+                    return true;
+
+            }
+        }
+        else // This edge is being deleted.
+        {
+            if (first)
+            {
+                int headRank = rankings.get(from.getName());
+                int toRank = rankings.get(to.getName());
+
+                if (headRank == tailRank && toRank <= headRank)
+                    return true;
+                else if (headRank > tailRank && toRank > headRank)
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                int headRank = rankings.get(to.getName());
+                int toRank = rankings.get(from.getName());
+
+                if (headRank == tailRank && toRank < headRank)
+                    return true;
+                else if (headRank > tailRank && toRank <= headRank)
+                    return true;
+                else 
+                    return false;
+            }
+        }
+    }
+
+
+
+    /**
      * Execution will begin here.
      */
     public static void main(String[] args)
@@ -200,38 +313,120 @@ public class SmartPartialSolver
         GraphReader currReader = new DefaultGraphReader(inputFile);
         Set<Edge> currEdges = currReader.getEdges();
 
-
-        // Determine which nodes were modified.
-        Set<Edge> modifiedEdges = new HashSet<Edge>();
-        // Edges that were added.
-        currEdges.removeAll(prevEdges);
-        modifiedEdges.addAll(currEdges);
-        // Edges that were removed.
-        // We need to refresh the current edges.
-        currEdges = currReader.getEdges();
-        prevEdges.removeAll(currEdges);
-        modifiedEdges.addAll(prevEdges);
+        // The previous node rankings.
+        Map<String,Integer> rankings = readStateFile();
 
         // Now we need to find all the nodes that were affected. This is
         // because we impose constraints on the nodes, not the edges. We will
         // also calculate the neighborhood sets at the name time.
         Set<Node> modifiedNodes = new HashSet<Node>();
         List<Node> nodesToCheck = new ArrayList<Node>();
-        // We first add the inital nodes to check.
-        for (Edge edge : modifiedEdges)
+        // Nodes that we can ignore.
+        Set<Node> ignoreNodes = new HashSet<Node>();
+
+        // Determine which nodes were modified.
+        Set<Edge> modifiedEdges = new HashSet<Edge>();
+        // Edges that were added.
+        currEdges.removeAll(prevEdges);
+        // Only check edges that we must.
+        for (Edge edge : currEdges)
         {
-            // Impose a smart check to see if we need to consider this edge.
-            if (mustCheck(edge.getFrom(), edge.getTo(), rankings))
+            // See if we need to consider this edge at all.
+            if (mustCheckModification(edge.getFrom(), edge.getTo(), rankings, true))
             {
-                if (modifiedNodes.add(edge.getFrom()))
-                    nodesToCheck.add(edge.getFrom());
-                if (modifiedNodes.add(edge.getTo()))
-                    nodesToCheck.add(edge.getTo());
+                for (Node n : edge.getFrom().getNeighbors())
+                {
+                    // The edge is pointing to this node.
+                    if (currReader.getEdges().contains(new Edge(n, edge.getFrom())))
+                    {
+                        // See if we must check this neighbor.
+                        if (mustCheckNeighbor(n, edge.getFrom(), edge.getTo(), rankings, true, false))
+                        {
+                            if (modifiedNodes.add(edge.getFrom()))
+                                nodesToCheck.add(edge.getFrom());
+                            if (modifiedNodes.add(n))
+                                nodesToCheck.add(n);
+                        }
+                        else // We can ignore this neighbor.
+                        {
+                            ignoreNodes.add(n);
+                        }
+                    }
+                    else // The edge is pointing from this node.
+                    {
+                         // See if we must check this neighbor.
+                        if (mustCheckNeighbor(edge.getFrom(), n, edge.getTo(), rankings, true, true))
+                        {
+                            if (modifiedNodes.add(edge.getFrom()))
+                                nodesToCheck.add(edge.getFrom());
+                            if (modifiedNodes.add(n))
+                                nodesToCheck.add(n);
+                        }
+                        else // We can ignore this neighbor.
+                        {
+                            ignoreNodes.add(n);
+                        }
+                    }
+                }
+            }
+            else // We can ignore this edge.
+            {
+                ignoreNodes.add(edge.getFrom());
+                ignoreNodes.add(edge.getTo());
             }
         }
-
-        // The previous node rankings.
-        Map<String,Integer> rankings = readStateFile();
+        
+        // Edges that were removed.
+        // We need to refresh the current edges.
+        currEdges = currReader.getEdges();
+        prevEdges.removeAll(currEdges);
+        // Only check edges that we must.
+        for (Edge edge : prevEdges)
+        {
+            // See if we need to consider this edge at all.
+            if (mustCheckModification(edge.getFrom(), edge.getTo(), rankings, false))
+            {
+                for (Node n : edge.getFrom().getNeighbors())
+                {
+                    // The edge is pointing to this node.
+                    if (currReader.getEdges().contains(new Edge(n, edge.getFrom())))
+                    {
+                        // See if we must check this neighbor.
+                        if (mustCheckNeighbor(n, edge.getFrom(), edge.getTo(), rankings, false, false))
+                        {
+                            if (modifiedNodes.add(edge.getFrom()))
+                                nodesToCheck.add(edge.getFrom());
+                            if (modifiedNodes.add(n))
+                                nodesToCheck.add(n);
+                        }
+                        else // We can ignore this neighbor.
+                        {
+                            ignoreNodes.add(n);
+                        }
+                    }
+                    else // The edge is pointing from this node.
+                    {
+                         // See if we must check this neighbor.
+                        if (mustCheckNeighbor(edge.getFrom(), n, edge.getTo(), rankings, false, true))
+                        {
+                            if (modifiedNodes.add(edge.getFrom()))
+                                nodesToCheck.add(edge.getFrom());
+                            if (modifiedNodes.add(n))
+                                nodesToCheck.add(n);
+                        }
+                        else // We can ignore this neighbor.
+                        {
+                            ignoreNodes.add(n);
+                        }
+                    }
+                }
+            }
+            else // We can ignore this edge.
+            {
+                ignoreNodes.add(edge.getFrom());
+                ignoreNodes.add(edge.getTo());
+            }
+        }
 
         // Each iteration we will check k-th neighbors (nodes that have a path
         // of at most k edges from themselves to the original nodes in
@@ -248,8 +443,9 @@ public class SmartPartialSolver
                 // And check their neighbors....
                 for (Node neighbor : node.getNeighbors()) 
                 {
-                    // If we have not already visited this neighbor...
-                    if (modifiedNodes.add(neighbor))
+                    // If we have not already visited this neighbor or if this
+                    // neighbor is being ignored on purpose.
+                    if (modifiedNodes.add(neighbor) || ignoreNodes.contains(neighbor))
                     {
                         // Add it to the nodes we will visit next iteration.
                         newNodesToCheck.add(neighbor);
