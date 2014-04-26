@@ -17,6 +17,11 @@ public class Node
     // The neighbors of this node.
     private Map<String, Node> neighbors = new HashMap<String, Node>();
 
+    // The nodes which point to this node.
+    private Set<Node> heads = new HashSet<Node>();
+    // The nodes to which this node points to.
+    private Set<Node> tails = new HashSet<Node>();
+
     public Node(String name)
     {
         this.name = name;
@@ -35,6 +40,28 @@ public class Node
     }
 
     /**
+     * Marks that this node is part of an edge where this node is the tail and
+     * the parameter node is the head.
+     *
+     * @param head A head of a directed edge containing this node.
+     */
+    public void addHead(Node head)
+    {
+        heads.add(head); 
+    }
+
+    /**
+     * Marks that this node is part of an edge where this node is the head and
+     * the parameter node is the tail.
+     *
+     * @param tail A tail of a directed edge containing this node.
+     */
+    public void addTail(Node tail)
+    {
+        tails.add(tail);
+    }
+
+    /**
      * Returns the name of the node.
      */
     public String getName()
@@ -42,6 +69,21 @@ public class Node
         return this.name;
     }
 
+    /**
+     * Returns the nodes which point to this node.
+     */
+    public Set<Node> getHeads()
+    {
+        return heads;
+    }
+
+    /**
+     * Returns the nodes to which this node points to.
+     */
+    public Set<Node> getTails()
+    {
+        return tails;
+    }
 
     /**
      * Returns a set containing the neighbors of this node.

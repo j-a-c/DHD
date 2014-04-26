@@ -1,0 +1,10 @@
+solution status: optimal solution found
+objective value:                                    2
+f__d__p                                             1 	(obj:1)
+e__d__p                                             1 	(obj:1)
+d__t                                               15 	(obj:0)
+b__t                                               15 	(obj:0)
+c__t                                                1 	(obj:0)
+e__t                                                1 	(obj:0)
+f__t                                                1 	(obj:0)
+g__t                                               14 	(obj:0)

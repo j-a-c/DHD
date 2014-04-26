@@ -1,0 +1,9 @@
+solution status: optimal solution found
+objective value:                                    2
+e__d__p                                             1 	(obj:1)
+g__e__p                                             1 	(obj:1)
+d__t                                                2 	(obj:0)
+b__t                                                3 	(obj:0)
+c__t                                                1 	(obj:0)
+e__t                                                2 	(obj:0)
+h__t                                                1 	(obj:0)

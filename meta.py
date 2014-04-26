@@ -35,14 +35,14 @@ sol_file = "tmp/out.sol"
 mut_sol_file ="tmp/mut_sol.sol"
 
 # The number of edges to mutate per iteration.
-mut_per = 0.025
+mut_per = 0.1
 
 # Then maximum amount of levels a node can change when being re-ranked.
 #leveld = 3
 leveld = levels
 
 # The neighborhood size to choose from when selecting nodes to dynamically re-rank.
-hood_size = 1
+hood_size = 2
 
 # The number of trials. (How many times should we run the perturbation program).
 trials = 10

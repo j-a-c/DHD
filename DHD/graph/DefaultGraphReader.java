@@ -86,6 +86,8 @@ public class DefaultGraphReader extends GraphReader
                 b = tempNodes.get(b.getName());
                 a.addNeighbor(b);
                 b.addNeighbor(a);
+                a.addTail(b);
+                b.addHead(a);
             }
 
             // Add the temporary nodes to the final node data structure.

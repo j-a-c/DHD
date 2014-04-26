@@ -17,6 +17,7 @@ import java.util.Set;
 import DHD.ds.*;
 import DHD.graph.*;
 import DHD.ilp.*;
+import DHD.logger.*;
 
 /**
  * @author Joshua A. Campbell
@@ -182,118 +183,8 @@ public class SmartPartialSolver
 
     }
 
-
-    /**
-     * Returns true if we must check this node to achieve a better hierarchy.
-     * This is basically the smart selection algorithm. This function is to be
-     * used on the modifications (added or deleted edges), not the neighbors of
-     * the affected nodes.
-     *
-     * @param from The node the edge is coming from.
-     * @param to The node the edge is going to.
-     * @param rankings The previous rankings of the nodes.
-     * @param added True if this edge is being added, false if the edge is
-     * being deleted.
-     *
-     * @return True if we need to check this node, false otherwise.
-     */
-    private static boolean mustCheckModification(Node from, Node to, Map<String,Integer> rankings, boolean added)
-    {
-        int fromRank = rankings.get(from.getName());
-        int toRank = rankings.get(to.getName());
-
-        if (added) // This edge is being added.
-        {
-            if (fromRank > toRank)
-                return false;
-            else
-                return true;
-        }
-        else // This edge is being deleted.
-        {
-            if (fromRank < toRank)
-                return true;
-            else return false;
-        }
-    }
-
-    /**
-     * Returns true if we must check this node to achieve a better hierarchy.
-     * This function is to be used on the neighbors of the nodes that were
-     * added or deleted initially.
-     *
-     * @param from The node the edge is coming from.
-     * @param to The node the edge is going to.
-     * @param tail The tail in the original edge.
-     * @param rankings The previous rankings of the nodes.
-     * @param added True if this edge is being added, false if the edge is
-     * being deleted.
-     * @param first True if the from node is part of the edge being inserted or
-     * deleted.
-     *
-     * @return True if we need to check this node, false otherwise.
-     */
-    private static boolean mustCheckNeighbor(Node from, Node to, Node tail, Map<String,Integer> rankings, boolean added, boolean first)
-    {
-        int tailRank = rankings.get(tail.getName());
-
-        if (added) // This edge is being added.
-        {
-            if (first) 
-            {
-                int headRank = rankings.get(from.getName());
-                int toRank = rankings.get(to.getName());
-
-                if (headRank == tailRank && headRank < toRank)
-                    return true;
-                else if (headRank < tailRank && toRank > headRank)
-                    return true;
-                else
-                    return false;
-            }
-            else
-            {
-                int headRank = rankings.get(to.getName());
-                int toRank = rankings.get(from.getName());
-
-                if (headRank == tailRank && toRank < headRank)
-                    return false;
-                else if (headRank < tailRank && toRank < headRank)
-                    return false;
-                else
-                    return true;
-
-            }
-        }
-        else // This edge is being deleted.
-        {
-            if (first)
-            {
-                int headRank = rankings.get(from.getName());
-                int toRank = rankings.get(to.getName());
-
-                if (headRank == tailRank && toRank <= headRank)
-                    return true;
-                else if (headRank > tailRank && toRank > headRank)
-                    return true;
-                else
-                    return false;
-            }
-            else
-            {
-                int headRank = rankings.get(to.getName());
-                int toRank = rankings.get(from.getName());
-
-                if (headRank == tailRank && toRank < headRank)
-                    return true;
-                else if (headRank > tailRank && toRank <= headRank)
-                    return true;
-                else 
-                    return false;
-            }
-        }
-    }
-
+    private static int UP = 0;
+    private static int DOWN = 1;
 
 
     /**
@@ -301,9 +192,11 @@ public class SmartPartialSolver
      */
     public static void main(String[] args)
     {
-    
         // Parse arguments.
         if (!parseArgs(args)) return;
+
+        // A logger for debug.
+        Logger logger = new Logger("tmp/smartLog");
 
         // Get the edges from the previous graph.
         GraphReader prevReader = new DefaultGraphReader(prevGraphFile);
@@ -321,8 +214,9 @@ public class SmartPartialSolver
         // also calculate the neighborhood sets at the name time.
         Set<Node> modifiedNodes = new HashSet<Node>();
         List<Node> nodesToCheck = new ArrayList<Node>();
-        // Nodes that we can ignore.
-        Set<Node> ignoreNodes = new HashSet<Node>();
+
+        // Mark the movement of nodes.
+        Map<Node, HashSet<Integer>> movements = new HashMap<Node, HashSet<Integer>>();
 
         // Determine which nodes were modified.
         Set<Edge> modifiedEdges = new HashSet<Edge>();
@@ -331,48 +225,28 @@ public class SmartPartialSolver
         // Only check edges that we must.
         for (Edge edge : currEdges)
         {
-            // See if we need to consider this edge at all.
-            if (mustCheckModification(edge.getFrom(), edge.getTo(), rankings, true))
+            Node fromNode = edge.getFrom();
+            Node toNode = edge.getTo();
+            int fromRank = rankings.get(fromNode.getName());
+            int toRank = rankings.get(toNode.getName());
+
+            if (fromRank <= toRank)
             {
-                for (Node n : edge.getFrom().getNeighbors())
-                {
-                    // The edge is pointing to this node.
-                    if (currReader.getEdges().contains(new Edge(n, edge.getFrom())))
-                    {
-                        // See if we must check this neighbor.
-                        if (mustCheckNeighbor(n, edge.getFrom(), edge.getTo(), rankings, true, false))
-                        {
-                            if (modifiedNodes.add(edge.getFrom()))
-                                nodesToCheck.add(edge.getFrom());
-                            if (modifiedNodes.add(n))
-                                nodesToCheck.add(n);
-                        }
-                        else // We can ignore this neighbor.
-                        {
-                            ignoreNodes.add(n);
-                        }
-                    }
-                    else // The edge is pointing from this node.
-                    {
-                         // See if we must check this neighbor.
-                        if (mustCheckNeighbor(edge.getFrom(), n, edge.getTo(), rankings, true, true))
-                        {
-                            if (modifiedNodes.add(edge.getFrom()))
-                                nodesToCheck.add(edge.getFrom());
-                            if (modifiedNodes.add(n))
-                                nodesToCheck.add(n);
-                        }
-                        else // We can ignore this neighbor.
-                        {
-                            ignoreNodes.add(n);
-                        }
-                    }
-                }
-            }
-            else // We can ignore this edge.
-            {
-                ignoreNodes.add(edge.getFrom());
-                ignoreNodes.add(edge.getTo());
+                if (movements.get(fromNode) == null)
+                    movements.put(fromNode, new HashSet<Integer>());
+                if (movements.get(toNode) == null)
+                    movements.put(toNode, new HashSet<Integer>());
+
+                movements.get(fromNode).add(UP);
+                movements.get(toNode).add(DOWN);
+
+                nodesToCheck.addAll(fromNode.getNeighbors());
+                nodesToCheck.addAll(toNode.getNeighbors());
+
+                modifiedNodes.add(fromNode);
+                modifiedNodes.add(toNode); 
+
+                //logger.log(fromNode + " (head of added edge) " + fromRank + ", tail rank (" + toNode + "):" + toRank);
             }
         }
         
@@ -383,48 +257,29 @@ public class SmartPartialSolver
         // Only check edges that we must.
         for (Edge edge : prevEdges)
         {
-            // See if we need to consider this edge at all.
-            if (mustCheckModification(edge.getFrom(), edge.getTo(), rankings, false))
+            Node fromNode = edge.getFrom();
+            Node toNode = edge.getTo();
+            int fromRank = rankings.get(fromNode.getName());
+            int toRank = rankings.get(toNode.getName());
+
+            if (fromRank > toRank) // Used to be >=
             {
-                for (Node n : edge.getFrom().getNeighbors())
-                {
-                    // The edge is pointing to this node.
-                    if (currReader.getEdges().contains(new Edge(n, edge.getFrom())))
-                    {
-                        // See if we must check this neighbor.
-                        if (mustCheckNeighbor(n, edge.getFrom(), edge.getTo(), rankings, false, false))
-                        {
-                            if (modifiedNodes.add(edge.getFrom()))
-                                nodesToCheck.add(edge.getFrom());
-                            if (modifiedNodes.add(n))
-                                nodesToCheck.add(n);
-                        }
-                        else // We can ignore this neighbor.
-                        {
-                            ignoreNodes.add(n);
-                        }
-                    }
-                    else // The edge is pointing from this node.
-                    {
-                         // See if we must check this neighbor.
-                        if (mustCheckNeighbor(edge.getFrom(), n, edge.getTo(), rankings, false, true))
-                        {
-                            if (modifiedNodes.add(edge.getFrom()))
-                                nodesToCheck.add(edge.getFrom());
-                            if (modifiedNodes.add(n))
-                                nodesToCheck.add(n);
-                        }
-                        else // We can ignore this neighbor.
-                        {
-                            ignoreNodes.add(n);
-                        }
-                    }
-                }
-            }
-            else // We can ignore this edge.
-            {
-                ignoreNodes.add(edge.getFrom());
-                ignoreNodes.add(edge.getTo());
+                if (movements.get(fromNode) == null)
+                    movements.put(fromNode, new HashSet<Integer>());
+                if (movements.get(toNode) == null)
+                    movements.put(toNode, new HashSet<Integer>());
+
+                movements.get(fromNode).add(DOWN);
+                movements.get(toNode).add(UP);
+
+                nodesToCheck.addAll(fromNode.getNeighbors());
+                nodesToCheck.addAll(toNode.getNeighbors());
+
+                modifiedNodes.add(fromNode);
+                modifiedNodes.add(toNode);
+
+                //logger.log(fromNode + " (head of deleted edge) " + fromRank + ", tail rank (" + toNode + "):" + toRank);
+
             }
         }
 
@@ -437,20 +292,85 @@ public class SmartPartialSolver
             // check' separate.
             List<Node> newNodesToCheck = new ArrayList<Node>();
 
+            boolean checkNeighbors = false;
+
             // Iterate over all nodes we need to check...
-            for (Node node : nodesToCheck)
+            for (Node nodeToCheck : nodesToCheck)
             {
-                // And check their neighbors....
-                for (Node neighbor : node.getNeighbors()) 
+                int currNodeRank = rankings.get(nodeToCheck.getName());
+
+                // Check the nodes that point to this node.
+                for (Node head : nodeToCheck.getHeads())
                 {
-                    // If we have not already visited this neighbor or if this
-                    // neighbor is being ignored on purpose.
-                    if (modifiedNodes.add(neighbor) || ignoreNodes.contains(neighbor))
+                    int currHeadRank = rankings.get(head.getName());
+
+                    // If rank(head) >= rank(current node) and the head is
+                    // moving.
+                    if (currHeadRank >= currNodeRank 
+                            && movements.get(head) != null)
                     {
-                        // Add it to the nodes we will visit next iteration.
-                        newNodesToCheck.add(neighbor);
+
+                        // if rank(head) == rank(current node) and the head is
+                        // moving up.
+                        if ((currHeadRank == currNodeRank) && (movements.get(head).contains(UP)))
+                        {
+                            if (movements.get(nodeToCheck) == null)
+                                movements.put(nodeToCheck, new HashSet<Integer>());
+
+                            movements.get(nodeToCheck).add(UP);
+                            
+                            checkNeighbors = true;
+                        }
+
+                        if ((currHeadRank >= currNodeRank) && (movements.get(head).contains(DOWN)))
+                        {
+                            if (movements.get(nodeToCheck) == null)
+                                movements.put(nodeToCheck, new HashSet<Integer>());
+
+                            movements.get(nodeToCheck).add(DOWN);
+                        
+                            checkNeighbors = true;
+                        }
+                    }
+
+                }
+
+                // Check the nodes that this node points to.
+                for (Node tail : nodeToCheck.getTails())
+                {
+                    int currTailRank = rankings.get(tail.getName());
+
+                    // If rank(tail) > rank (current node) and the tail is moving.
+                    if ((currTailRank > currNodeRank) && (movements.get(tail) != null)) 
+                    {
+                        if (movements.get(tail).contains(UP))
+                        {
+                            if (movements.get(nodeToCheck) == null)
+                                movements.put(nodeToCheck, new HashSet<Integer>());
+
+                            movements.get(nodeToCheck).add(UP);
+                        
+                            checkNeighbors = true;
+                        }
+
+                        if (movements.get(tail).contains(DOWN))
+                        {
+                            if (movements.get(nodeToCheck) == null)
+                                movements.put(nodeToCheck, new HashSet<Integer>());
+
+                            movements.get(nodeToCheck).add(DOWN);
+                            
+                            checkNeighbors = true;
+                        }
                     }
                 }
+
+                if (checkNeighbors)
+                {
+                    modifiedNodes.add(nodeToCheck);
+                    newNodesToCheck.addAll(nodeToCheck.getNeighbors());
+                }
+
             }
         
             // Update the new nodes to check.
@@ -476,6 +396,10 @@ public class SmartPartialSolver
         // Generate and save the ILP formulation.
         String ilp = generator.generate();
         saveOutput(ilp, "tmp/temp.lp");
+
+        logger.log("# Modified nodes: " + modifiedNodes.size() + 
+                " Total nodes:" + (unmodifiedNodes.size() + modifiedNodes.size()));
+        logger.log("=====");
     }
 
 }
