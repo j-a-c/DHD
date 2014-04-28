@@ -12,7 +12,7 @@ log = open("try_log", 'w')
 currTest = 0
 
 # The number of tests to run.
-numIters = 1000
+numIters = 10000
 
 # Deleting an edge is just the reverse off (orig then add).
 # If this is true, then we are assuming that the previous level graph is the
@@ -21,8 +21,16 @@ numIters = 1000
 addLast = True
 
 # Statistics we are going to keep track of.
+# These two mark whether the edge of an edge moves up or down.
 headStats = [[0,0,0] for i in range(6)]
 tailStats = [[0,0,0] for i in range(6)]
+# For the first stat, if the head of an edge moves up, what happens to the tail? 
+# [Up, Down, Same][Up, Down, Same]
+edgeHead = [[0,0,0] for i in range(9)]
+# Likewise, if the tail of an edge moves up, what happens to the tail?
+# [Up, Down, Same][Up, Down, Same]
+edgeTail = [[0,0,0] for i in range(9)]
+
 
 for iteration in range(numIters):
 
@@ -65,7 +73,6 @@ for iteration in range(numIters):
     call([os.curdir + '/scip_script', sol_file])
 
     call(['java', '-jar', 'DHD.jar', '-f', sol_file])
-
 
 
     # Keep track of the original levels.
@@ -134,6 +141,15 @@ for iteration in range(numIters):
             headNode = origLevelsReverse[level2][random.randint(0, len(origLevelsReverse[level2]) - 1)]
             tailNode = origLevelsReverse[level1][random.randint(0, len(origLevelsReverse[level1]) - 1)]
 
+
+    # Marks the nodes pointed to from the tail, where the tail refers to the
+    # tail of the edge we are going to modify.
+    origFromTail = []
+    # Marks the nodes pointing to the tail.
+    origToTail = []
+    origFromHead = []
+    origToHead = []
+
     # Write to the log file.
     log.write("Adding edge " + headNode + " - " + tailNode + '\n')
     # Read the old graph and write the new graph. We add the new
@@ -143,8 +159,21 @@ for iteration in range(numIters):
     new = open(newgraph, "w")
     # Copy all the old edges.
     for line in old:
+        nodes = line.split()
+
+        if nodes[0] == tailNode:
+            origFromTail.append(nodes[1])
+        elif nodes[0] == headNode:
+            origFromHead.append(nodes[1])
+        elif nodes[1] == tailNode:
+            origToTail.append(nodes[0])
+        elif nodes[1] == headNode:
+            origToHead.append(nodes[0])
+
         new.write(line)
     # Write the new edge.
+    # We are not going to include this edge in the origFromTail, origFromHead..
+    # etc statistics.
     new.write(headNode + " " + tailNode)
     # Close the files.
     new.close()
@@ -179,38 +208,218 @@ for iteration in range(numIters):
             log.write(node + ' ' + str(newLevels[node]) + ' ' + str(origLevels[node]) + '\n')
 
 
+    EQUAL = 0
+    GREATER = 1
+    LESSER = 2
+
     UP = 0
     DOWN = 1
     SAME = 2
 
-    # TODO Keep track of the statistics.
+    equality = 1000
+
+    # Keep track of the statistics.
+    # This the 'addition case'.
     if addLast:
         headOld = origLevels[headNode]
         headNew = newLevels[headNode]
         tailOld = origLevels[tailNode]
         tailNew = newLevels[tailNode]
 
-        if headOld == headNew:
-            headStats[currTest][SAME] += 1
-        elif headOld > headNew:
-            headStats[currTest][DOWN] += 1
-        else:
-            headStats[currTest][UP] += 1
+        headMovement = 3
 
+        if headOld == headNew:
+            headMovement = SAME
+        elif headOld > headNew:
+            headMovement = DOWN
+        else:
+            headMovement = UP
+
+        headStats[currTest][headMovement] += 1
+
+        for node in origFromHead:
+            nodeOld = origLevels[node]
+            nodeNew = newLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeHead[3*equality + headMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeHead[3*equality + headMovement][DOWN] += 1
+            else:
+                edgeHead[3*equality + headMovement][UP] += 1
+        for node in origToHead:
+            nodeOld = origLevels[node]
+            nodeNew = newLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeTail[3*equality + headMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeTail[3*equality + headMovement][DOWN] += 1
+            else:
+                edgeTail[3*equality + headMovement][UP] += 1
+
+
+        tailMovement = 3
 
         if tailOld == tailNew:
-            tailStats[currTest][SAME] += 1
+            tailMovement = SAME
         elif tailOld > tailNew:
-            tailStats[currTest][DOWN] += 1
+            tailMovement = DOWN
         else:
-            tailStats[currTest][UP] += 1
+            tailMovement = UP
 
+        tailStats[currTest][tailMovement] += 1
+
+        for node in origFromTail:
+            nodeOld = origLevels[node]
+            nodeNew = newLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeHead[3*equality + tailMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeHead[3*equality + tailMovement][DOWN] += 1
+            else:
+                edgeHead[3*equality + tailMovement][UP] += 1
+        for node in origToHead:
+            nodeOld = origLevels[node]
+            nodeNew = newLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeTail[3*equality + tailMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeTail[3*equality + tailMovement][DOWN] += 1
+            else:
+                edgeTail[3*equality + tailMovement][UP] += 1
+
+    # This is the deletion case.
     else:
         headOld = newLevels[headNode]
         headNew = origLevels[headNode]
         tailOld = newLevels[tailNode]
         tailNew = origLevels[tailNode]
 
+        headMovement = 3
+
+        if headOld == headNew:
+            headMovement = SAME
+        elif headOld > headNew:
+            headMovement = DOWN
+        else:
+            headMovement = UP
+
+        headStats[currTest + 3][headMovement] += 1
+
+        for node in origFromHead:
+            nodeOld = newLevels[node]
+            nodeNew = origLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeHead[3*equality + headMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeHead[3*equality + headMovement][DOWN] += 1
+            else:
+                edgeHead[3*equality + headMovement][UP] += 1
+        for node in origToHead:
+            nodeOld = newLevels[node]
+            nodeNew = origLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeTail[3*equality + headMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeTail[3*equality + headMovement][DOWN] += 1
+            else:
+                edgeTail[3*equality + headMovement][UP] += 1
+
+
+        tailMovement = 3
+
+        if tailOld == tailNew:
+            tailMovement = SAME
+        elif tailOld > tailNew:
+            tailMovement = DOWN
+        else:
+            tailMovement = UP
+
+        tailStats[currTest + 3][tailMovement] += 1
+
+        for node in origFromTail:
+            nodeOld = newLevels[node]
+            nodeNew = origLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeHead[3*equality + tailMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeHead[3*equality + tailMovement][DOWN] += 1
+            else:
+                edgeHead[3*equality + tailMovement][UP] += 1
+        for node in origToHead:
+            nodeOld = newLevels[node]
+            nodeNew = origLevels[node]
+
+            if nodeOld == headOld:
+                equality = EQUAL
+            elif nodeOld < headOld:
+                equality = GREATER
+            else:
+                equality = LESSER
+
+            if nodeOld == nodeNew:
+                edgeTail[3*equality + tailMovement][SAME] += 1
+            elif nodeOld > nodeNew:
+                edgeTail[3*equality + tailMovement][DOWN] += 1
+            else:
+                edgeTail[3*equality + tailMovement][UP] += 1
+
+        """
         if headOld == headNew:
             headStats[currTest + 3][SAME] += 1
         elif headOld > headNew:
@@ -225,7 +434,7 @@ for iteration in range(numIters):
             tailStats[currTest + 3][DOWN] += 1
         else:
             tailStats[currTest + 3][UP] += 1
-
+        """
 
     # Write a separator in the log file.
     log.write("===\n")
@@ -238,7 +447,7 @@ for iteration in range(numIters):
         addLast = not addLast
 
 
-# TODO Print the stats.
+# Print the stats.
 print '0: Add =, 1: Add >, 2: Add <, 3: Del =, 4: Del >, 5: Del <'
 
 print "Head stats: UP, DOWN, SAME"
@@ -248,3 +457,15 @@ for i in range(6):
 print "Tail stats"
 for i in range(6):
     print i, ':', tailStats[i]
+
+# Print neighbor statistics.
+print '[Up, Down, Same][Up, Down, Same]'
+print '(Head/Tail)(Neighbor)'
+print 'Moving head\'s neighbors. (If you head is moving (Up, Down, SAME), then you move (UDS))'
+print 'First 3 are (UDS) for =, next 3 are (UDS) for head/tail > node, last 3 are <.'
+for i in range(9):
+    print i, ':', edgeHead[i]
+print 'Moving tail\'s neighbors.'
+for i in range(9):
+    print i, ':', edgeTail[i]
+
